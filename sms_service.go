@@ -4,25 +4,33 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/Vintorez/simple-go-http-client/client"
+)
+
+const (
+	apiFormat   = "json"
+	baseUrlPath = "sms.do"
 )
 
 type MessageParams struct {
-	details bool `json:"details"`
 	Test    bool `json:"test"`
 	Fast    bool `json:"fast"`
 	Flash   bool `json:"flash"`
 }
 
 type SmsService struct {
-	client  *client
-	urlPath string
+	client client.IHttpClient
 }
 
-func NewSmsService(username, password string, httpClient *http.Client) *SmsService {
-	return &SmsService{
-		client:  newClient(username, password, httpClient),
-		urlPath: "sms.do",
+func NewSmsService(username, password string, log client.ILogger, insecure bool, localCertFile string, httpClient *http.Client) (*SmsService, error) {
+	c, err := client.NewHttpClient(ApiUrl, baseUrlPath, username, password, log, insecure, localCertFile, UserAgent, httpClient)
+	if err != nil {
+		return nil, err
 	}
+	return &SmsService{
+		client:  c,
+	}, nil
 }
 
 // Send sends message with options.
@@ -51,7 +59,7 @@ func (s *SmsService) SendWithDetailedReport(from, to, message string, params *Me
 
 func (s *SmsService) createRequestData(from, to, message string, params *MessageParams, details bool) url.Values {
 	data := url.Values{}
-	data.Set("format", ApiFormat)
+	data.Set("format", apiFormat)
 	data.Set("from", from)
 	data.Add("to", to)
 	data.Set("message", message)
@@ -74,13 +82,9 @@ func (s *SmsService) createRequestData(from, to, message string, params *Message
 }
 
 func (s *SmsService) send(data url.Values) (*rawReport, *Error) {
-	r, err := s.client.NewRequest("POST", s.urlPath, strings.NewReader(data.Encode()))
-	if err != nil {
-		return nil, NewError(RequestErr, err.Error())
-	}
-
+	body := strings.NewReader(data.Encode())
 	raw := &rawReport{}
-	_, err = s.client.Do(r, raw)
+	err := s.client.POST("", body, raw)
 	if err != nil {
 		return nil, NewError(SendErr, err.Error())
 	}

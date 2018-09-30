@@ -8,7 +8,14 @@ Simple smsapi.com client for sending sms.
 go get github.com/vintorez/smsapicom-go-client
 ```
 
-example with default http-client and no options params:
+example with no optional params:
+
+* "username" - user name
+* "password"  - password
+* "log" - logger interface (optional)
+* "insecure" - use certificate (optional)
+* "localCertFile" - path to local certificate (optional)
+* "httpClient" - custom http client (optional)
 
 ```go
 package main
@@ -17,6 +24,6 @@ import (
 	"github.com/vintorez/smsapicom-go-client"
 )
 
-service := smsapicom.NewSmsService("user_name", "user_password", nil)
+service := smsapicom.NewSmsService("username", "password", "log", "insecure", "localCertFile", "httpClient")
 report, err := service.Send("from", "to", "text message", nil)
 ```
